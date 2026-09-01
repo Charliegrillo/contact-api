@@ -10,16 +10,18 @@ import { GetContacts } from '../../../application/use-cases/contact/GetContacts'
 import { GetContactById } from '../../../application/use-cases/contact/GetContactById';
 // import { TursoContactRepository } from '../../repositories/TursoContactRepository';
 import { NodemailerEmailService } from '../../services/NodemailerEmailService';
-import { ThreeLayerCachedContactRepository } from '../../repositories/ThreeLayerCachedContactRepository';
+//import { ThreeLayerCachedContactRepository } from '../../repositories/ThreeLayerCachedContactRepository';
 import { CacheMiddleware } from '../middleware/CacheMiddleware';
+import { HybridCachedContactRepository } from '../../repositories/HybridCachedContactRepository';
 
 export function createContactRoutes(): Router {
   const router = Router();
   
   // Inicializar dependencias
   //const contactRepository = new TursoContactRepository();
-  const contactRepository = new ThreeLayerCachedContactRepository();
+  //const contactRepository = new ThreeLayerCachedContactRepository();
 
+  const contactRepository = new HybridCachedContactRepository();
   const emailService = new NodemailerEmailService();
   
   const createContactUseCase = new CreateContact(contactRepository, emailService);
