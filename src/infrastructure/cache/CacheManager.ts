@@ -23,9 +23,12 @@ export class CacheManager {
     private constructor() {
         this.memoryCache = MemoryCache.getInstance();
         //this.redisCache = RedisCache.getInstance();
-        this.tursoKVCache = TursoKVCache.getInstance();
+        const activeProvider = (process.env.CACHE_PROVIDER || 'turso-kv').toLowerCase();
+
+        this.tursoKVCache = activeProvider === 'turso-kv' ? TursoKVCache.getInstance() : null as any;
         this.databaseCache = DatabaseCache.getInstance();
-        console.log('✅ Cache Manager initialized (3 layers)');
+
+        console.log(`✅ Cache Manager initialized (${activeProvider === 'turso-kv' ? '3 layers' : '2 layers'})`);
     }
 
     public static getInstance(): CacheManager {

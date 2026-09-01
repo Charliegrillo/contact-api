@@ -8,10 +8,19 @@ import { TursoClient } from '../database/TursoClient';
  */
 export class TursoKVCache {
     private static instance: TursoKVCache;
-    private client: Client;
+    private client: Client | null;
     private isInitialized: boolean = false;
 
     private constructor() {
+        const activeProvider = (process.env.CACHE_PROVIDER || 'turso-kv').toLowerCase();
+
+        if (activeProvider === 'redis' || activeProvider === 'upstash') {
+            this.client = null;
+            this.isInitialized = false;
+            console.log('ℹ️ CAPA 2: Turso KV cache skipped because CACHE_PROVIDER is set to ' + activeProvider);
+            return;
+        }
+
         this.client = TursoClient.getInstance();
         this.initialize().catch(error => {
             console.error('❌ Error initializing Turso KV:', error);
@@ -19,9 +28,16 @@ export class TursoKVCache {
     }
 
     private async initialize(): Promise<void> {
+        if (!this.client) {
+            this.isInitialized = false;
+            return;
+        }
+
         try {
+            const client = this.client;
+
             // Crear tabla KV si no existe
-            await this.client.execute(`
+            await client.execute(`
                 CREATE TABLE IF NOT EXISTS kv_cache (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL,
@@ -34,13 +50,13 @@ export class TursoKVCache {
             `);
 
             // Índice para expiración
-            await this.client.execute(`
+            await client.execute(`
                 CREATE INDEX IF NOT EXISTS idx_kv_expires 
                 ON kv_cache(expires_at)
             `);
 
             // Índice para contador de hits
-            await this.client.execute(`
+            await client.execute(`
                 CREATE INDEX IF NOT EXISTS idx_kv_hits 
                 ON kv_cache(hit_count)
             `);
@@ -71,7 +87,7 @@ export class TursoKVCache {
      * Obtener valor
      */
     async get<T>(key: string): Promise<T | null> {
-        if (!this.isInitialized) {
+        if (!this.isInitialized || !this.client) {
             return null;
         }
 
@@ -110,7 +126,7 @@ export class TursoKVCache {
      * Guardar valor
      */
     async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
-        if (!this.isInitialized) {
+        if (!this.isInitialized || !this.client) {
             return;
         }
 
@@ -143,7 +159,7 @@ export class TursoKVCache {
      * Eliminar valor
      */
     async delete(key: string): Promise<void> {
-        if (!this.isInitialized) {
+        if (!this.isInitialized || !this.client) {
             return;
         }
 
@@ -162,7 +178,7 @@ export class TursoKVCache {
      * Eliminar por patrón
      */
     async deleteByPattern(pattern: string): Promise<void> {
-        if (!this.isInitialized) {
+        if (!this.isInitialized || !this.client) {
             return;
         }
 
@@ -181,7 +197,7 @@ export class TursoKVCache {
      * Limpiar expirados
      */
     async cleanExpired(): Promise<void> {
-        if (!this.isInitialized) {
+        if (!this.isInitialized || !this.client) {
             return;
         }
 
@@ -200,7 +216,7 @@ export class TursoKVCache {
      * Obtener estadísticas
      */
     async getStats(): Promise<any> {
-        if (!this.isInitialized) {
+        if (!this.isInitialized || !this.client) {
             return null;
         }
 

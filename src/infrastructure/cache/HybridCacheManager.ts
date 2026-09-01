@@ -34,14 +34,17 @@ export class HybridCacheManager {
 
     private constructor() {
         this.memoryCache = MemoryCache.getInstance();
-        
+
         // ✅ Obtener proveedor del Factory (Turso KV o Redis)
         this.provider = CacheFactory.getProvider();
-        
+
+        const activeLayer2 = this.provider.getName();
+        const activeLayer3 = 'Database Cache';
+
         console.log(`✅ Hybrid Cache Manager initialized`);
         console.log(`   ├── Capa 1: Memoria (Node-Cache)`);
-        console.log(`   ├── Capa 2: ${this.provider.getName()}`);
-        console.log(`   ├── Capa 3: Database Cache`);
+        console.log(`   ├── Capa 2: ${activeLayer2} (active)`);
+        console.log(`   ├── Capa 3: ${activeLayer3}`);
         console.log(`   └── Estrategia: Eventos + TTL de respaldo`);
     }
 
