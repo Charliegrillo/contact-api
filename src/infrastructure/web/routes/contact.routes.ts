@@ -13,6 +13,7 @@ import { NodemailerEmailService } from '../../services/NodemailerEmailService';
 //import { ThreeLayerCachedContactRepository } from '../../repositories/ThreeLayerCachedContactRepository';
 import { CacheMiddleware } from '../middleware/CacheMiddleware';
 import { HybridCachedContactRepository } from '../../repositories/HybridCachedContactRepository';
+import { GetContactsPaginated } from '../../../application/use-cases/contact/GetContactsPaginated';
 
 export function createContactRoutes(): Router {
   const router = Router();
@@ -29,13 +30,15 @@ export function createContactRoutes(): Router {
   const getContactByIdUseCase = new GetContactById(contactRepository);
   const deleteContactUseCase = new DeleteContact(contactRepository);
   const updateContactStatusUseCase = new UpdateContactStatus(contactRepository);
-  
+  const getContactsPaginatedUseCase = new GetContactsPaginated(contactRepository);
+
   const contactController = new ContactController(
     createContactUseCase,
     getContactsUseCase,
     getContactByIdUseCase,
     deleteContactUseCase,
-    updateContactStatusUseCase
+    updateContactStatusUseCase,
+    getContactsPaginatedUseCase
   );
 
   const authMiddleware = new AuthMiddleware();

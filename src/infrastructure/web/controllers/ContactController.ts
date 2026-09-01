@@ -6,7 +6,7 @@ import { UpdateContactStatus } from '../../../application/use-cases/contact/Upda
 import { CreateContactDTO } from '../../../domain/entities/Contact';
 import { DeleteContact } from '../../../application/use-cases/contact/DeleteContact';
 import { getRouteParam, isValidUUID, getNumericQueryParam, getQueryParam } from '../utils/request.utils';
-
+import { GetContactsPaginated } from '../../../application/use-cases/contact/GetContactsPaginated';
 
 export class ContactController {
   constructor(
@@ -14,9 +14,11 @@ export class ContactController {
     private getContactsUseCase: GetContacts,
     private getContactByIdUseCase: GetContactById,
     private deleteContactUseCase: DeleteContact,
-    private updateContactStatusUseCase?: UpdateContactStatus
+    private updateContactStatusUseCase?: UpdateContactStatus,
+    private getContactsPaginatedUseCase?: GetContactsPaginated
   ) {}
 
+  
   async create(req: Request, res: Response): Promise<void> {
     try {
       const contactData: CreateContactDTO = req.body;
@@ -38,36 +40,62 @@ export class ContactController {
   }
 
   async getAll(req: Request, res: Response): Promise<void> {
-    try {
-      // Opcional: agregar paginación
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      
-      const contacts = await this.getContactsUseCase.execute();
-      
-      // Aplicar paginación simple
-      const startIndex = (page - 1) * limit;
-      const endIndex = page * limit;
-      const paginatedContacts = contacts.slice(startIndex, endIndex);
-      
-      res.status(200).json({
-        success: true,
-        data: paginatedContacts,
-        pagination: {
-          page,
-          limit,
-          total: contacts.length,
-          totalPages: Math.ceil(contacts.length / limit)
+        try {
+            // Obtener parámetros de paginación
+            const page = getNumericQueryParam(req, 'page', 1);
+            const limit = getNumericQueryParam(req, 'limit', 10);
+            const status = getQueryParam(req, 'status');
+            
+            console.log(`\n📄 GET /contacts?page=${page}&limit=${limit}${status ? `&status=${status}` : ''}`);
+            
+            // Verificar si hay caso de uso paginado
+            if (this.getContactsPaginatedUseCase) {
+                // Usar paginación con caché
+                const result = await this.getContactsPaginatedUseCase.execute({
+                    page,
+                    limit
+                });
+                
+                // Aplicar filtro de estado si existe
+                let data = result.data;
+                if (status && ['pending', 'contacted', 'completed'].includes(status)) {
+                    data = data.filter(contact => contact.status === status);
+                }
+                
+                res.status(200).json({
+                    success: true,
+                    data,
+                    pagination: result.pagination
+                });
+            } else {
+                // Fallback: obtener todos sin paginación
+                const contacts = await this.getContactsUseCase.execute();
+                
+                // Aplicar paginación manual
+                const startIndex = (page - 1) * limit;
+                const endIndex = page * limit;
+                const paginatedData = contacts.slice(startIndex, endIndex);
+                
+                res.status(200).json({
+                    success: true,
+                    data: paginatedData,
+                    pagination: {
+                        page,
+                        limit,
+                        total: contacts.length,
+                        totalPages: Math.ceil(contacts.length / limit),
+                        cached: false
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error getting contacts:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error getting contacts',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
         }
-      });
-    } catch (error) {
-      console.error('Error getting contacts:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error getting contacts',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
   }
 
   async getById(req: Request, res: Response): Promise<void> {
