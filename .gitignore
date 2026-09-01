@@ -4,3 +4,4 @@ dist/
 *.log
 docs/
 .DS_Store
+package-lock.json
