@@ -8,14 +8,18 @@ import { DeleteContact } from '../../../application/use-cases/contact/DeleteCont
 import { UpdateContactStatus } from '../../../application/use-cases/contact/UpdateContactStatus';
 import { GetContacts } from '../../../application/use-cases/contact/GetContacts';
 import { GetContactById } from '../../../application/use-cases/contact/GetContactById';
-import { TursoContactRepository } from '../../repositories/TursoContactRepository';
+// import { TursoContactRepository } from '../../repositories/TursoContactRepository';
 import { NodemailerEmailService } from '../../services/NodemailerEmailService';
+import { ThreeLayerCachedContactRepository } from '../../repositories/ThreeLayerCachedContactRepository';
+import { CacheMiddleware } from '../middleware/CacheMiddleware';
 
 export function createContactRoutes(): Router {
   const router = Router();
   
   // Inicializar dependencias
-  const contactRepository = new TursoContactRepository();
+  //const contactRepository = new TursoContactRepository();
+  const contactRepository = new ThreeLayerCachedContactRepository();
+
   const emailService = new NodemailerEmailService();
   
   const createContactUseCase = new CreateContact(contactRepository, emailService);
@@ -44,6 +48,7 @@ export function createContactRoutes(): Router {
   // Rutas protegidas
   router.get(
     '/',
+    CacheMiddleware.cache(30),  // ← Cachear 30 segundos    
     authMiddleware.authenticate.bind(authMiddleware),
     authMiddleware.authorize('admin'),
     contactController.getAll.bind(contactController)
@@ -51,17 +56,20 @@ export function createContactRoutes(): Router {
 
   router.get(
     '/:id',
+    CacheMiddleware.cache(60),  // ← Cachear 60 segundos
     authMiddleware.authenticate.bind(authMiddleware),
     contactController.getById.bind(contactController)
   );
   router.patch(
     '/:id/status',
+     CacheMiddleware.noCache(),  // ← No cachear
     authMiddleware.authenticate.bind(authMiddleware),
     authMiddleware.authorize('admin'),
     contactController.updateStatus.bind(contactController)
   );
   router.delete(
     '/:id',
+     CacheMiddleware.noCache(),  // ← No cachear
     authMiddleware.authenticate.bind(authMiddleware),
     authMiddleware.authorize('admin'),
     contactController.delete.bind(contactController)
