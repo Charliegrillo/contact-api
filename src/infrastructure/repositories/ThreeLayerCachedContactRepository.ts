@@ -32,7 +32,8 @@ export class ThreeLayerCachedContactRepository implements IContactRepository {
         // Guardar en caché (3 capas)
         await this.cacheManager.set(cacheKey, contacts, {
             memory: 30,    // 30 segundos en memoria
-            redis: 300,    // 5 minutos en Redis
+            //redis: 300,    // 5 minutos en Redis
+            kv: 600,        // 10 minutos en KV
             database: 900  // 15 minutos en BD
         });
         

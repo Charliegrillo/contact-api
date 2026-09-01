@@ -23,6 +23,6 @@
     "incremental": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/infrastructure/cache/RedisCache.bak"],
   "exclude": ["node_modules", "dist"]
 }
