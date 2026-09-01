@@ -22,13 +22,13 @@ export class CacheFactory {
             case 'upstash':
                 CacheFactory.provider = new UpstashRedisProvider();
                 break;            
-            case 'turso-kv':
-            default:
-                CacheFactory.provider = new TursoKVCacheProvider();
+            case 'turso-kv': 
+                 CacheFactory.provider = new TursoKVCacheProvider();
                 break;
+            default:
+                throw new Error(`Unknown cache provider: ${providerType}`);
         }
-
-        return CacheFactory.provider;
+        return CacheFactory.provider!;
     }
      /**
      * Resetear proveedor (para testing)

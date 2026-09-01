@@ -91,9 +91,29 @@ export class HybridCachedContactRepository implements IContactRepository {
         return result;
     }
 
-    // Otros métodos del repositorio...
+    // ✅ BIEN: Primero busca en caché, luego en BD
     async findAll(): Promise<Contact[]> {
-        return this.repository.findAll();
+        const cacheKey = 'contacts:all';
+        
+        // 1. Buscar en caché
+        const cached = await this.cacheManager.get<Contact[]>(cacheKey, 'contacts');
+        
+        if (cached) {
+            console.log('✅ Caché HIT: Sirviendo desde caché');
+            return cached;
+        }
+        
+        // 2. Si no hay caché, consultar BD
+        console.log('🔄 Caché MISS: Consultando BD...');
+        const contacts = await this.repository.findAll();
+        
+        // 3. Guardar en caché
+        if (contacts.length > 0) {
+            await this.cacheManager.set(cacheKey, contacts, 'contacts');
+            console.log('💾 Guardado en caché');
+        }
+        
+        return contacts;
     }
 
     async findById(id: string): Promise<Contact | null> {

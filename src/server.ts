@@ -9,16 +9,20 @@ import { TursoUserRepository } from './infrastructure/repositories/TursoUserRepo
 import { JwtAuthService } from './infrastructure/services/JwtAuthService';
 import { CreateUser } from './application/use-cases/user/CreateUser';
 import { v4 as uuidv4 } from 'uuid';
+import { HybridCacheManager } from './infrastructure/cache/HybridCacheManager';
+import { CacheFactory } from './infrastructure/cache/CacheFactory';
 
 dotenv.config();
 
 class Server {
   private app: express.Express;
   private port: number;
+  private cacheManager: HybridCacheManager;
 
   constructor() {
     this.app = express();
     this.port = parseInt(process.env.PORT || '3000');
+    this.initializeCache();
     this.initializeMiddlewares();
     this.initializeRoutes();
   }
@@ -118,6 +122,36 @@ class Server {
     } catch (error) {
       console.error('Error creating default admin:', error);
     }
+  }
+
+   /**
+   * Inicializar sistema de caché
+   * Esto asegura que solo se cree UN proveedor
+   */
+  private initializeCache(): void {
+    console.log('\n🔧 Inicializando sistema de caché...');
+    console.log(`   CACHE_PROVIDER: ${process.env.CACHE_PROVIDER || 'turso-kv'}`);
+    
+    // ✅ Inicializar HybridCacheManager (que usa CacheFactory)
+    this.cacheManager = HybridCacheManager.getInstance();
+    
+    // ✅ Verificar qué proveedor se creó
+    const provider = CacheFactory.getProvider();
+    console.log(`   ✅ Proveedor activo: ${provider.getName()}`);
+    
+    // ✅ Verificar que es el correcto
+    const expectedProvider = process.env.CACHE_PROVIDER || 'turso-kv';
+    const actualProvider = provider.getName();
+    
+    if (expectedProvider === 'upstash' && actualProvider !== 'upstash-redis') {
+      console.error('❌ ERROR: Se esperaba Upstash Redis pero se creó otro proveedor');
+    }
+    
+    if (expectedProvider === 'turso-kv' && actualProvider !== 'turso-kv') {
+      console.error('❌ ERROR: Se esperaba Turso KV pero se creó otro proveedor');
+    }
+    
+    console.log('');
   }
 
   async start(): Promise<void> {
