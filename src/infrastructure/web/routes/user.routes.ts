@@ -38,7 +38,7 @@ export function createUserRoutes(): Router {
 
   router.post(
     '/login',
-    //strictRateLimitMiddleware,
+    strictRateLimitMiddleware,
     ValidationMiddleware.validate(loginUserSchema),
     userController.login.bind(userController)
   );
