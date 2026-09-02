@@ -23,9 +23,31 @@ class Server {
     this.app = express();
     this.port = parseInt(process.env.PORT || '3000');
     this.initializeCache();
+    this.configureTrustProxy();
     this.initializeMiddlewares();
     this.initializeRoutes();
   }
+
+  /**
+   * Configurar trust proxy para express-rate-limit
+   * Necesario cuando la app corre detrás de un proxy (Render, Heroku, etc.)
+   */
+  private configureTrustProxy(): void {
+      const environment = process.env.NODE_ENV || 'development';
+      
+      if (environment === 'production') {
+          // En producción (Render, Heroku, etc.)
+          // Confiar en el primer proxy
+          this.app.set('trust proxy', 1);
+          console.log('✅ Trust proxy: 1 (producción)');
+      } else {
+          // En desarrollo local
+          // No confiar en proxies
+          this.app.set('trust proxy', false);
+          console.log('✅ Trust proxy: false (desarrollo)');
+      }
+    }
+
 
   private initializeMiddlewares(): void {
     // Middlewares básicos
