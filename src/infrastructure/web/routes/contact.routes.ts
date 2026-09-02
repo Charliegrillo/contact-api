@@ -53,7 +53,7 @@ export function createContactRoutes(): Router {
   // Rutas protegidas
   router.get(
     '/',
-    CacheMiddleware.cache(30),  // ← Cachear 30 segundos    
+    CacheMiddleware.cacheFirstPage(30),  // Solo cachear la página 1
     authMiddleware.authenticate.bind(authMiddleware),
     authMiddleware.authorize('admin'),
     contactController.getAll.bind(contactController)

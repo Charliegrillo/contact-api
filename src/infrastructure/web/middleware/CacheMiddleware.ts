@@ -63,6 +63,24 @@ export class CacheMiddleware {
     }
 
     /**
+     * Cachear únicamente la primera página de un listado paginado.
+     * Las páginas siguientes continúan directamente hacia el controlador.
+     */
+    static cacheFirstPage(ttlSeconds?: number) {
+        return (req: Request, res: Response, next: NextFunction): void => {
+            const requestedPage = Number(req.query.page ?? 1);
+
+            if (requestedPage !== 1) {
+                res.setHeader('X-Cache', 'BYPASS');
+                next();
+                return;
+            }
+
+            void CacheMiddleware.cache(ttlSeconds)(req, res, next);
+        };
+    }
+
+    /**
      * Cachear SOLO en Memoria (más rápido, pero se pierde al reiniciar)
      * @param ttlSeconds - TTL en segundos (default: 30)
      */
