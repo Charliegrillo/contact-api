@@ -11,6 +11,7 @@ import { CreateUser } from './application/use-cases/user/CreateUser';
 import { v4 as uuidv4 } from 'uuid';
 import { HybridCacheManager } from './infrastructure/cache/HybridCacheManager';
 import { CacheFactory } from './infrastructure/cache/CacheFactory';
+import { createTestRoutes } from './infrastructure/web/routes/test.routes';
 
 dotenv.config();
 
@@ -68,6 +69,8 @@ class Server {
   }
 
   private initializeRoutes(): void {
+    this.app.use('/api/test', createTestRoutes());    
+    
     this.app.get('/', (req, res) => {
       res.json({
         name: 'Contact API',

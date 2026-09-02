@@ -22,15 +22,41 @@ export class CreateContact implements IUseCase<CreateContactDTO, Contact> {
     // Registrar en BD (asíncrono)
     const savedContact = await this.contactRepository.create(contact);
 
-    // Enviar email (asíncrono, no bloquea la respuesta)
-    this.emailService.sendBudgetNotification(
-      data.name,
-      data.email
-    ).catch(error => {
-      console.error('Error sending email:', error);
-      // Aquí podrías implementar un sistema de colas o reintentos
-    });
-
+    // 3. Enviar emails de forma asíncrona (no bloquea la respuesta)
+    this.sendEmails(savedContact);
+    
     return savedContact;
   }
+
+   /**
+     * Enviar emails al visitante y al administrador
+     */
+    private async sendEmails(contact: Contact): Promise<void> {
+        try {
+            // ✅ Email al VISITANTE (confirmación)
+            console.log('📧 Enviando email de confirmación al visitante...');
+            await this.emailService.sendBudgetNotification(
+                contact.name,
+                contact.email
+            );
+            console.log(`✅ Email enviado al visitante: ${contact.email}`);
+
+            // ✅ Email al ADMINISTRADOR (notificación)
+            console.log('📧 Enviando email de notificación al administrador...');
+            await this.emailService.sendAdminNotification({
+                name: contact.name,
+                email: contact.email,
+                phone: contact.phone,
+                message: contact.message,
+                budget: contact.budget,
+                company: contact.company,
+                createdAt: contact.createdAt
+            });
+            console.log(`✅ Email enviado al administrador: ${process.env.ADMIN_EMAIL}`);
+
+        } catch (error) {
+            console.error('❌ Error enviando emails:', error);
+            // No lanzar el error para no afectar la respuesta principal
+        }
+    }
 }
